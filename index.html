@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Calculator</title>
+<style>
+    :root {
+        --black: #020604;
+        --emerald: #00e87a;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+        background: #020604;
+        color: #c8ffe0;
+        font-family: 'Rajdhani', system-ui, sans-serif;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .calc-container {
+        width: 320px;
+        background: rgba(4, 20, 8, 0.95);
+        border: 1px solid rgba(0,232,122,0.4);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 0 50px rgba(0,232,122,0.2);
+    }
+    .display {
+        background: #010302;
+        border: 1px solid rgba(0,232,122,0.3);
+        height: 90px;
+        margin-bottom: 24px;
+        border-radius: 16px;
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        font-size: 32px;
+        font-family: 'Share Tech Mono', monospace;
+        letter-spacing: 3px;
+        color: #00ff8a;
+    }
+    .keys {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+    }
+    .key {
+        height: 62px;
+        border-radius: 16px;
+        background: rgba(0,232,122,0.08);
+        border: 1px solid rgba(0,232,122,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: #c8ffe0;
+    }
+    .key:active {
+        background: rgba(0,232,122,0.3);
+        transform: scale(0.92);
+    }
+    .key.operator { color: #00ff8a; background: rgba(0,232,122,0.15); }
+    .key.equals { 
+        background: #00e87a; 
+        color: #020604; 
+        font-weight: 700; 
+    }
+    .status {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 11px;
+        color: rgba(0,232,122,0.6);
+        font-family: 'Share Tech Mono', monospace;
+    }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="calc-container">
+    <div class="display" id="display">0</div>
+    <div class="keys">
+        <div class="key" onclick="clearDisplay()">C</div>
+        <div class="key" onclick="appendToDisplay('(')">(</div>
+        <div class="key" onclick="appendToDisplay(')')">)</div>
+        <div class="key operator" onclick="appendToDisplay('/')">÷</div>
+        
+        <div class="key" onclick="appendToDisplay('7')">7</div>
+        <div class="key" onclick="appendToDisplay('8')">8</div>
+        <div class="key" onclick="appendToDisplay('9')">9</div>
+        <div class="key operator" onclick="appendToDisplay('*')">×</div>
+        
+        <div class="key" onclick="appendToDisplay('4')">4</div>
+        <div class="key" onclick="appendToDisplay('5')">5</div>
+        <div class="key" onclick="appendToDisplay('6')">6</div>
+        <div class="key operator" onclick="appendToDisplay('-')">−</div>
+        
+        <div class="key" onclick="appendToDisplay('1')">1</div>
+        <div class="key" onclick="appendToDisplay('2')">2</div>
+        <div class="key" onclick="appendToDisplay('3')">3</div>
+        <div class="key operator" onclick="appendToDisplay('+')">+</div>
+        
+        <div class="key" onclick="appendToDisplay('0')">0</div>
+        <div class="key" onclick="appendToDisplay('.')">.</div>
+        <div class="key equals" onclick="calculate()">=</div>
+    </div>
+    <div class="status">Введите 1111 и нажмите =</div>
+</div>
+
+<script>
+let currentInput = '0';
+const display = document.getElementById('display');
+
+function appendToDisplay(value) {
+    if (currentInput === '0' && value !== '.') currentInput = '';
+    currentInput += value;
+    display.textContent = currentInput;
+}
+
+function clearDisplay() {
+    currentInput = '0';
+    display.textContent = '0';
+}
+
+function calculate() {
+    try {
+        if (currentInput === '1111' || currentInput.includes('1111')) {
+            unlockRealSite();
+        } else {
+            let result = eval(currentInput.replace('×','*').replace('−','-').replace('÷','/'));
+            display.textContent = result;
+            currentInput = result.toString();
+        }
+    } catch(e) {
+        display.textContent = 'Ошибка';
+        setTimeout(clearDisplay, 800);
+    }
+}
+
+function unlockRealSite() {
+    display.textContent = 'ACCESS GRANTED';
+    display.style.color = '#00ff8a';
+    
+    setTimeout(() => {
+        window.location.href = 'app.html';   // ← Переход на настоящий WTS
+    }, 600);
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+});
+</script>
+
+</body>
+</html>
