@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>О WTS — White Trust Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ── Shared variables (mirror index.html) ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #020604;
+  --deep: #030a05;
+  --dark: #071209;
+  --panel: rgba(5, 18, 8, 0.85);
+  --glass: rgba(10, 30, 14, 0.55);
+  --glass2: rgba(4, 20, 8, 0.72);
+  --emerald: #00e87a;
+  --emerald2: #00c45e;
+  --emerald3: #00ff8a;
+  --teal: #00b894;
+  --dim: rgba(0, 232, 122, 0.12);
+  --dim2: rgba(0, 232, 122, 0.07);
+  --glow: 0 0 20px rgba(0, 232, 122, 0.4), 0 0 60px rgba(0, 232, 122, 0.15);
+  --glow2: 0 0 10px rgba(0, 232, 122, 0.5), 0 0 30px rgba(0, 232, 122, 0.2);
+  --border: rgba(0, 232, 122, 0.2);
+  --border2: rgba(0, 232, 122, 0.1);
+  --text: #c8ffe0;
+  --text2: rgba(200, 255, 224, 0.6);
+  --text3: rgba(200, 255, 224, 0.35);
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  --r: 18px;
+}
+
+html, body {
+  width: 100%; min-height: 100%;
+  background: var(--black);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--emerald2); border-radius: 2px; }
+
+/* ── Canvas ── */
+#particle-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── Grid BG ── */
+.grid-bg {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,232,122,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,232,122,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridDrift 20s linear infinite;
+  pointer-events: none;
+}
+@keyframes gridDrift {
+  from { transform: translateY(0); }
+  to { transform: translateY(40px); }
+}
+
+/* ── Fog ── */
+.splash-fog {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 60%, rgba(0,232,122,0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 30% 50%, rgba(0,180,80,0.03) 0%, transparent 60%);
+  animation: fogPulse 6s ease-in-out infinite alternate;
+}
+@keyframes fogPulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+/* ── Deco lines ── */
+.deco-lines {
+  position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden;
+}
+.deco-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(0,232,122,0.08), transparent);
+  height: 1px;
+  animation: decoScroll 8s linear infinite;
+}
+.deco-line:nth-child(1) { width: 60%; top: 25%; animation-delay: 0s; }
+.deco-line:nth-child(2) { width: 40%; top: 55%; animation-delay: -3s; left: 30%; }
+.deco-line:nth-child(3) { width: 30%; top: 78%; animation-delay: -6s; left: 10%; }
+@keyframes decoScroll {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(200%); }
+}
+
+/* ── Ripple ── */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0,232,122,0.2);
+  transform: scale(0);
+  animation: rippleOut 0.5s linear;
+  pointer-events: none;
+}
+@keyframes rippleOut {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ══════════════════════ PAGE LAYOUT ══════════════════════ */
+.page {
+  position: relative; z-index: 5;
+  max-width: 500px; margin: 0 auto;
+  padding: 0 16px 48px;
+  min-height: 100vh;
+}
+
+/* ── Top Bar ── */
+.about-topbar {
+  display: flex; align-items: center;
+  padding: 52px 0 20px;
+  gap: 12px;
+}
+
+.back-btn {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  position: relative; overflow: hidden;
+}
+.back-btn:active {
+  transform: scale(0.88);
+  background: rgba(0,232,122,0.1);
+  border-color: var(--emerald2);
+  box-shadow: var(--glow2);
+}
+
+.topbar-logo-wrap {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+.topbar-wts {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 900;
+  letter-spacing: 8px;
+  color: var(--emerald3);
+  text-shadow: var(--glow);
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+@keyframes titleGlow {
+  from { text-shadow: 0 0 20px rgba(0,232,122,0.6), 0 0 60px rgba(0,232,122,0.2); }
+  to { text-shadow: 0 0 30px rgba(0,232,122,0.9), 0 0 80px rgba(0,232,122,0.4); }
+}
+
+.topbar-subtitle {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 3px;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* placeholder to balance back button */
+.topbar-spacer { width: 40px; flex-shrink: 0; }
+
+/* ── Hero divider ── */
+.hero-line {
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--emerald2), transparent);
+  margin: 0 auto 28px;
+  box-shadow: 0 0 8px var(--emerald2);
+}
+
+/* ══════════════════════ ACCORDION ══════════════════════ */
+.accordion {
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.acc-item {
+  background: var(--glass2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 0 0 1px rgba(0,232,122,0.03) inset,
+    0 8px 24px rgba(0,0,0,0.4);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  opacity: 0;
+  transform: translateY(18px);
+  animation: slideUp 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+.acc-item:nth-child(1) { animation-delay: 0.1s; }
+.acc-item:nth-child(2) { animation-delay: 0.22s; }
+.acc-item:nth-child(3) { animation-delay: 0.34s; }
+
+@keyframes slideUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.acc-item.open {
+  border-color: rgba(0,232,122,0.25);
+  box-shadow:
+    0 0 0 1px rgba(0,232,122,0.08) inset,
+    0 0 30px rgba(0,232,122,0.07),
+    0 8px 32px rgba(0,0,0,0.5);
+}
+
+.acc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px;
+  cursor: pointer;
+  user-select: none;
+  position: relative; overflow: hidden;
+  transition: background 0.3s ease;
+}
+.acc-header:active { background: rgba(0,232,122,0.04); }
+
+.acc-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,232,122,0.06) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.acc-item.open .acc-header::before { opacity: 1; }
+
+.acc-title {
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text);
+  transition: color 0.3s;
+  line-height: 1.4;
+}
+.acc-item.open .acc-title { color: var(--emerald3); text-shadow: 0 0 12px rgba(0,232,122,0.4); }
+
+.acc-arrow {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: rgba(0,232,122,0.05);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.acc-item.open .acc-arrow {
+  transform: rotate(180deg);
+  background: rgba(0,232,122,0.1);
+  border-color: var(--emerald2);
+  box-shadow: 0 0 10px rgba(0,232,122,0.2);
+}
+
+.acc-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1);
+}
+.acc-item.open .acc-body {
+  max-height: 1200px;
+}
+
+.acc-inner {
+  padding: 0 20px 22px;
+  border-top: 1px solid rgba(0,232,122,0.07);
+}
+
+/* ── Block 1 — Text ── */
+.acc-text {
+  font-size: 14px; line-height: 1.85;
+  color: var(--text2);
+  font-weight: 400;
+  margin-top: 16px;
+}
+.acc-text + .acc-text { margin-top: 10px; }
+
+.acc-list {
+  list-style: none;
+  margin: 10px 0;
+}
+.acc-list li {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text2);
+  padding: 5px 0 5px 18px;
+  position: relative;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+}
+.acc-list li::before {
+  content: '•';
+  position: absolute; left: 0;
+  color: var(--emerald);
+}
+
+/* ── Block 2 — Team cards ── */
+.team-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.team-card {
+  background: rgba(0, 20, 8, 0.6);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 14px 12px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  cursor: default;
+}
+
+.team-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,232,122,0.09) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.team-card:hover::before { opacity: 1; }
+.team-card:hover {
+  border-color: rgba(0,232,122,0.28);
+  box-shadow: 0 0 20px rgba(0,232,122,0.1), 0 4px 16px rgba(0,0,0,0.4);
+  transform: translateY(-2px);
+}
+
+.team-card-top {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+
+.team-avatar {
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0,232,122,0.15), rgba(0,180,80,0.08));
+  border: 1px solid rgba(0,232,122,0.25);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 700;
+  color: var(--emerald);
+  box-shadow: 0 0 10px rgba(0,232,122,0.15);
+  position: relative;
+}
+
+.online-dot {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--emerald);
+  border: 1.5px solid var(--black);
+  box-shadow: 0 0 6px var(--emerald);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.team-name {
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--emerald3);
+  text-shadow: 0 0 8px rgba(0,232,122,0.3);
+}
+
+.team-role {
+  font-family: var(--font-body);
+  font-size: 11px; line-height: 1.5;
+  color: var(--text2);
+}
+
+/* wide card for Moderator Team */
+.team-card.wide {
+  grid-column: 1 / -1;
+}
+.team-card.wide .team-avatar {
+  width: 36px; height: 36px;
+  font-size: 12px;
+}
+
+/* ── Block 3 — Rules ── */
+.rules-list {
+  list-style: none;
+  margin-top: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.rule-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(0,232,122,0.03);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateX(-10px);
+}
+.acc-item.open .rule-item {
+  animation: ruleIn 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+.acc-item.open .rule-item:nth-child(1) { animation-delay: 0.05s; }
+.acc-item.open .rule-item:nth-child(2) { animation-delay: 0.10s; }
+.acc-item.open .rule-item:nth-child(3) { animation-delay: 0.15s; }
+.acc-item.open .rule-item:nth-child(4) { animation-delay: 0.20s; }
+.acc-item.open .rule-item:nth-child(5) { animation-delay: 0.25s; }
+.acc-item.open .rule-item:nth-child(6) { animation-delay: 0.30s; }
+
+@keyframes ruleIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.rule-item:hover {
+  border-color: rgba(0,232,122,0.2);
+  background: rgba(0,232,122,0.05);
+  box-shadow: 0 0 12px rgba(0,232,122,0.06);
+}
+
+.rule-num {
+  font-family: var(--font-display);
+  font-size: 10px; font-weight: 700;
+  color: var(--emerald);
+  text-shadow: 0 0 8px rgba(0,232,122,0.5);
+  min-width: 18px;
+  margin-top: 1px;
+}
+
+.rule-text {
+  font-size: 13px; line-height: 1.6;
+  color: var(--text2);
+  font-weight: 400;
+}
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+<div class="grid-bg"></div>
+<div class="splash-fog"></div>
+<div class="deco-lines">
+  <div class="deco-line"></div>
+  <div class="deco-line"></div>
+  <div class="deco-line"></div>
+</div>
+
+<div class="page">
+
+  <!-- Top Bar -->
+  <div class="about-topbar">
+    <div class="back-btn" id="back-btn" onclick="goBack(this, event)">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M11 4L6 9L11 14" stroke="rgba(0,232,122,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="topbar-logo-wrap">
+      <div class="topbar-wts">WTS</div>
+      <div class="topbar-subtitle">White Trust Service</div>
+    </div>
+
+    <div class="topbar-spacer"></div>
+  </div>
+
+  <div class="hero-line"></div>
+
+  <!-- Accordion -->
+  <div class="accordion">
+
+    <!-- Block 1 -->
+    <div class="acc-item" id="acc-1">
+      <div class="acc-header" onclick="toggleAcc('acc-1', this)">
+        <div class="acc-title">Что такое White Trust Service?</div>
+        <div class="acc-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 5L7 9L11 5" stroke="rgba(0,232,122,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div class="acc-inner">
+          <p class="acc-text">White Trust Service — это не просто очередной проект или пустая оболочка, которых сегодня тысячи.</p>
+          <p class="acc-text">Идея создания WTS формировалась долгое время. Основная цель системы — создать сильную цифровую экосистему, объединяющую технологии, безопасность, инструменты взаимодействия и собственную инфраструктуру.</p>
+          <p class="acc-text">Внутри WTS развиваются:</p>
+          <ul class="acc-list">
+            <li>собственные сервисы</li>
+            <li>внутренние инструменты</li>
+            <li>информационные системы</li>
+            <li>технологичные mini-app решения</li>
+          </ul>
+          <p class="acc-text">Главная задача проекта — развитие системы нового уровня, где каждая деталь создаётся как единый механизм.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block 2 -->
+    <div class="acc-item" id="acc-2">
+      <div class="acc-header" onclick="toggleAcc('acc-2', this)">
+        <div class="acc-title">Кто представляет систему?</div>
+        <div class="acc-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 5L7 9L11 5" stroke="rgba(0,232,122,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div class="acc-inner">
+          <div class="team-grid">
+
+            <div class="team-card">
+              <div class="team-card-top">
+                <div class="team-avatar">
+                  TR
+                  <div class="online-dot"></div>
+                </div>
+                <div class="team-name">Trace</div>
+              </div>
+              <div class="team-role">Основатель и идейный лидер проекта</div>
+            </div>
+
+            <div class="team-card">
+              <div class="team-card-top">
+                <div class="team-avatar">
+                  RT
+                  <div class="online-dot"></div>
+                </div>
+                <div class="team-name">Root</div>
+              </div>
+              <div class="team-role">Программист и создатель технологической части</div>
+            </div>
+
+            <div class="team-card">
+              <div class="team-card-top">
+                <div class="team-avatar">
+                  AR
+                  <div class="online-dot"></div>
+                </div>
+                <div class="team-name">Architect</div>
+              </div>
+              <div class="team-role">Отвечает за структуру и организацию</div>
+            </div>
+
+            <div class="team-card wide">
+              <div class="team-card-top">
+                <div class="team-avatar">
+                  MT
+                  <div class="online-dot"></div>
+                </div>
+                <div class="team-name">Moderator Team</div>
+              </div>
+              <div class="team-role">Поддержка пользователей и контроль порядка</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Block 3 -->
+    <div class="acc-item" id="acc-3">
+      <div class="acc-header" onclick="toggleAcc('acc-3', this)">
+        <div class="acc-title">Правила системы</div>
+        <div class="acc-arrow">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 5L7 9L11 5" stroke="rgba(0,232,122,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div class="acc-inner">
+          <ul class="rules-list">
+            <li class="rule-item">
+              <span class="rule-num">01</span>
+              <span class="rule-text">Уважение участников.</span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-num">02</span>
+              <span class="rule-text">Запрещены попытки вреда платформе.</span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-num">03</span>
+              <span class="rule-text">Конфиденциальность обязательна.</span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-num">04</span>
+              <span class="rule-text">Соблюдение внутреннего порядка обязательно.</span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-num">05</span>
+              <span class="rule-text">Запрещено распространение ложной информации.</span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-num">06</span>
+              <span class="rule-text">Решения администрации обязательны к исполнению.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /accordion -->
+</div><!-- /page -->
+
+<script>
+// ── Particles ──
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let W, H;
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+function Particle() {
+  this.x = Math.random() * W;
+  this.y = Math.random() * H;
+  this.vx = (Math.random() - 0.5) * 0.3;
+  this.vy = -Math.random() * 0.5 - 0.1;
+  this.r = Math.random() * 1.5 + 0.3;
+  this.alpha = Math.random() * 0.5 + 0.1;
+  this.life = 1;
+  this.decay = Math.random() * 0.003 + 0.001;
+}
+
+for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+function animParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+    if (p.life <= 0 || p.y < -10) particles[i] = new Particle();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,232,122,${p.alpha * p.life})`;
+    ctx.fill();
+  });
+  if (Math.random() < 0.02) {
+    const lx = Math.random() * W;
+    const ly = Math.random() * H;
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(lx + Math.random() * 80 - 40, ly + Math.random() * 4 - 2);
+    ctx.strokeStyle = `rgba(0,232,122,${Math.random() * 0.06 + 0.02})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  requestAnimationFrame(animParticles);
+}
+animParticles();
+
+// ── Ripple ──
+function createRipple(el, e) {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const rect = el.getBoundingClientRect();
+  const x = (e.clientX || rect.left + rect.width/2) - rect.left;
+  const y = (e.clientY || rect.top + rect.height/2) - rect.top;
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${x-size/2}px;top:${y-size/2}px`;
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+// ── Accordion ──
+function toggleAcc(id, headerEl) {
+  const item = document.getElementById(id);
+  const isOpen = item.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.acc-item').forEach(el => el.classList.remove('open'));
+  if (!isOpen) {
+    item.classList.add('open');
+  }
+  createRipple(headerEl, { clientX: null, clientY: null });
+}
+
+// ── Back navigation ──
+function goBack(el, e) {
+  createRipple(el, e);
+  setTimeout(() => {
+    if (document.referrer && document.referrer.includes(location.hostname)) {
+      history.back();
+    } else {
+      window.location.href = 'index.html';
+    }
+  }, 200);
+}
+</script>
+</body>
+</html>

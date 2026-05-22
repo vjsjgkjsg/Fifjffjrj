@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WTS — White Trust Service</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #020604;
+  --deep: #030a05;
+  --dark: #071209;
+  --panel: rgba(5, 18, 8, 0.85);
+  --glass: rgba(10, 30, 14, 0.55);
+  --glass2: rgba(4, 20, 8, 0.72);
+  --emerald: #00e87a;
+  --emerald2: #00c45e;
+  --emerald3: #00ff8a;
+  --teal: #00b894;
+  --dim: rgba(0, 232, 122, 0.12);
+  --dim2: rgba(0, 232, 122, 0.07);
+  --glow: 0 0 20px rgba(0, 232, 122, 0.4), 0 0 60px rgba(0, 232, 122, 0.15);
+  --glow2: 0 0 10px rgba(0, 232, 122, 0.5), 0 0 30px rgba(0, 232, 122, 0.2);
+  --border: rgba(0, 232, 122, 0.2);
+  --border2: rgba(0, 232, 122, 0.1);
+  --text: #c8ffe0;
+  --text2: rgba(200, 255, 224, 0.6);
+  --text3: rgba(200, 255, 224, 0.35);
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+  --r: 18px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--black);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══════════════════════ SCROLLBAR ══════════════════════ */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--emerald2); border-radius: 2px; }
+
+/* ══════════════════════ CANVAS ══════════════════════ */
+#particle-canvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+}
+
+/* ══════════════════════ SCREENS ══════════════════════ */
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.screen.exit {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ══════════════════════ GRID BG ══════════════════════ */
+.grid-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,232,122,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,232,122,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridDrift 20s linear infinite;
+}
+@keyframes gridDrift {
+  from { transform: translateY(0); }
+  to { transform: translateY(40px); }
+}
+
+/* ══════════════════════ SPLASH SCREEN ══════════════════════ */
+#splash {
+  background: radial-gradient(ellipse at 50% 30%, #031a08 0%, #020604 60%, #010302 100%);
+}
+
+.splash-fog {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 60%, rgba(0,232,122,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 30% 50%, rgba(0,180,80,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 70% 40%, rgba(0,180,80,0.04) 0%, transparent 60%);
+  animation: fogPulse 6s ease-in-out infinite alternate;
+}
+@keyframes fogPulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+.scan-line {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,232,122,0.6), transparent);
+  animation: scanMove 3s linear infinite;
+  z-index: 2;
+}
+@keyframes scanMove {
+  from { top: -2px; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  to { top: 100%; opacity: 0; }
+}
+
+.splash-center {
+  position: relative; z-index: 5;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 28px;
+}
+
+/* Shield */
+.shield-wrap {
+  position: relative;
+  width: 160px; height: 160px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 232, 122, 0.25);
+}
+.ring-1 {
+  width: 130px; height: 130px;
+  animation: spinRing 8s linear infinite;
+  border-color: rgba(0,232,122,0.35);
+  border-top-color: var(--emerald);
+  box-shadow: 0 0 12px rgba(0,232,122,0.2);
+}
+.ring-2 {
+  width: 155px; height: 155px;
+  animation: spinRing 12s linear infinite reverse;
+  border-color: rgba(0,232,122,0.15);
+  border-right-color: rgba(0,232,122,0.5);
+}
+.ring-3 {
+  width: 110px; height: 110px;
+  animation: spinRing 5s linear infinite;
+  border-color: rgba(0,232,122,0.1);
+  border-bottom-color: rgba(0,232,122,0.4);
+  border-style: dashed;
+}
+@keyframes spinRing {
+  to { transform: rotate(360deg); }
+}
+
+.shield-svg {
+  position: relative; z-index: 2;
+  filter: drop-shadow(0 0 18px rgba(0,232,122,0.7)) drop-shadow(0 0 40px rgba(0,232,122,0.3));
+  animation: shieldPulse 2.5s ease-in-out infinite;
+}
+@keyframes shieldPulse {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(0,232,122,0.7)) drop-shadow(0 0 40px rgba(0,232,122,0.3)); }
+  50% { filter: drop-shadow(0 0 28px rgba(0,232,122,1)) drop-shadow(0 0 60px rgba(0,232,122,0.5)); }
+}
+
+.splash-title {
+  text-align: center;
+}
+.splash-wts {
+  font-family: var(--font-display);
+  font-size: 42px; font-weight: 900;
+  letter-spacing: 12px;
+  color: var(--emerald3);
+  text-shadow: var(--glow);
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+@keyframes titleGlow {
+  from { text-shadow: 0 0 20px rgba(0,232,122,0.6), 0 0 60px rgba(0,232,122,0.2); }
+  to { text-shadow: 0 0 30px rgba(0,232,122,0.9), 0 0 80px rgba(0,232,122,0.4), 0 0 120px rgba(0,232,122,0.1); }
+}
+.splash-sub {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 4px;
+  color: var(--text2);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+.splash-status {
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: 2px;
+  color: rgba(0,232,122,0.7);
+  animation: blink 1.2s step-end infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.progress-wrap {
+  width: 220px;
+}
+.progress-bar-bg {
+  height: 2px;
+  background: rgba(0,232,122,0.1);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--emerald2), var(--emerald3));
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px var(--emerald);
+}
+.progress-pct {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 2px;
+  color: var(--text3);
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* ══════════════════════ ONBOARDING ══════════════════════ */
+#onboarding {
+  background: radial-gradient(ellipse at 50% 20%, #041508 0%, #020604 70%);
+  padding: 0 20px;
+  overflow-y: auto;
+  justify-content: flex-start;
+  padding-top: 50px;
+  padding-bottom: 40px;
+}
+
+.onboarding-card {
+  position: relative; z-index: 5;
+  width: 100%; max-width: 420px;
+  background: var(--glass2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(0,232,122,0.05) inset,
+    0 20px 60px rgba(0,0,0,0.6),
+    0 0 40px rgba(0,232,122,0.06);
+}
+
+.ob-logo {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-bottom: 20px;
+}
+.ob-logo-icon {
+  filter: drop-shadow(0 0 8px rgba(0,232,122,0.6));
+}
+.ob-logo-text {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 700;
+  letter-spacing: 5px;
+  color: var(--emerald3);
+  text-shadow: 0 0 15px rgba(0,232,122,0.5);
+}
+
+.ob-title {
+  font-family: var(--font-display);
+  font-size: 17px; font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--emerald);
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 0 15px rgba(0,232,122,0.4);
+  line-height: 1.4;
+}
+
+.ob-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin-bottom: 20px;
+}
+
+.ob-text {
+  font-size: 14px; line-height: 1.8;
+  color: var(--text2);
+  font-weight: 400;
+  margin-bottom: 12px;
+}
+.ob-text strong {
+  color: var(--emerald);
+  font-weight: 600;
+}
+
+.ob-values {
+  list-style: none;
+  margin: 12px 0 16px 0;
+}
+.ob-values li {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text2);
+  padding: 5px 0 5px 18px;
+  position: relative;
+  letter-spacing: 0.5px;
+}
+.ob-values li::before {
+  content: '▸';
+  position: absolute; left: 0;
+  color: var(--emerald);
+}
+
+.ob-checkbox-wrap {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin: 20px 0;
+  cursor: pointer;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border2);
+  background: rgba(0,232,122,0.03);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+.ob-checkbox-wrap:active { transform: scale(0.98); }
+.ob-checkbox-wrap.checked {
+  border-color: var(--emerald2);
+  background: rgba(0,232,122,0.07);
+  box-shadow: 0 0 15px rgba(0,232,122,0.1);
+}
+
+.custom-checkbox {
+  width: 22px; height: 22px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  background: rgba(0,232,122,0.05);
+  margin-top: 1px;
+}
+.custom-checkbox.checked {
+  background: var(--emerald2);
+  border-color: var(--emerald);
+  box-shadow: 0 0 12px rgba(0,232,122,0.5);
+}
+.custom-checkbox svg { opacity: 0; transition: opacity 0.2s; }
+.custom-checkbox.checked svg { opacity: 1; }
+
+.ob-checkbox-label {
+  font-size: 13px; line-height: 1.6;
+  color: var(--text2);
+}
+
+.btn-continue {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,232,122,0.15);
+  background: rgba(0,232,122,0.05);
+  color: var(--text3);
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: not-allowed;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  position: relative; overflow: hidden;
+}
+.btn-continue.active {
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(0,232,122,0.15), rgba(0,180,80,0.1));
+  border-color: var(--emerald2);
+  color: var(--emerald3);
+  box-shadow: 0 0 20px rgba(0,232,122,0.2), 0 0 0 1px rgba(0,232,122,0.1) inset;
+  animation: btnGlow 2s ease-in-out infinite alternate;
+}
+@keyframes btnGlow {
+  from { box-shadow: 0 0 15px rgba(0,232,122,0.2), 0 0 0 1px rgba(0,232,122,0.1) inset; }
+  to { box-shadow: 0 0 30px rgba(0,232,122,0.4), 0 0 0 1px rgba(0,232,122,0.2) inset; }
+}
+.btn-continue.active:active { transform: scale(0.97); }
+
+.btn-continue::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%), rgba(0,232,122,0.2) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.btn-continue.active:hover::after { opacity: 1; }
+
+/* ══════════════════════ HOME SCREEN ══════════════════════ */
+#home {
+  background: radial-gradient(ellipse at 50% 0%, #051a08 0%, #020604 50%, #010302 100%);
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.home-inner {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  position: relative; z-index: 5;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 90px;
+}
+
+/* Top bar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 52px 20px 16px;
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  display: flex; align-items: center; gap: 0;
+}
+
+.profile-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(0,232,122,0.15), 0 0 15px rgba(0,232,122,0.1);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
+}
+.profile-btn:active { transform: scale(0.9); box-shadow: 0 0 20px rgba(0,232,122,0.3); }
+
+.topbar-right {
+  display: flex; gap: 10px;
+}
+
+.icon-btn {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  position: relative;
+}
+.icon-btn:active {
+  transform: scale(0.85);
+  background: rgba(0,232,122,0.1);
+  border-color: var(--emerald2);
+  box-shadow: var(--glow2);
+}
+
+.notif-dot {
+  width: 7px; height: 7px;
+  background: var(--emerald);
+  border-radius: 50%;
+  position: absolute; top: 7px; right: 7px;
+  box-shadow: 0 0 6px var(--emerald);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+/* Hero */
+.hero {
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 10px 20px 28px;
+  flex-shrink: 0;
+}
+
+.hero-logo {
+  font-family: var(--font-display);
+  font-size: 38px; font-weight: 900;
+  letter-spacing: 10px;
+  color: var(--emerald3);
+  text-shadow: var(--glow);
+  animation: heroGlow 3s ease-in-out infinite alternate;
+}
+@keyframes heroGlow {
+  from { text-shadow: 0 0 20px rgba(0,232,122,0.5), 0 0 50px rgba(0,232,122,0.15); }
+  to { text-shadow: 0 0 30px rgba(0,232,122,0.8), 0 0 80px rgba(0,232,122,0.3); }
+}
+.hero-sub {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 4px;
+  color: var(--text3);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+.hero-line {
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--emerald2), transparent);
+  margin-top: 14px;
+  box-shadow: 0 0 8px var(--emerald2);
+}
+
+/* Status bar */
+.status-row {
+  display: flex; gap: 8px;
+  padding: 0 20px 20px;
+  flex-shrink: 0;
+}
+.status-pill {
+  flex: 1;
+  height: 32px;
+  background: var(--glass);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 1px;
+  color: var(--text3);
+  backdrop-filter: blur(12px);
+}
+.status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 5px var(--emerald);
+  animation: dotPulse 2s infinite;
+}
+.status-dot.yellow { background: #f0c000; box-shadow: 0 0 5px #f0c000; }
+.status-dot.blue { background: #00b8ff; box-shadow: 0 0 5px #00b8ff; }
+
+/* Grid */
+.grid-section {
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 3px;
+  color: var(--text3);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding: 0 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border2), transparent);
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.card {
+  aspect-ratio: 1;
+  background: var(--glass2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:
+    0 0 0 1px rgba(0,232,122,0.03) inset,
+    0 8px 24px rgba(0,0,0,0.4);
+  user-select: none;
+}
+
+.card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,232,122,0.08) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.card:hover::before, .card:active::before { opacity: 1; }
+
+.card::after {
+  content: '';
+  position: absolute; inset: -1px;
+  border-radius: var(--r);
+  background: linear-gradient(135deg, rgba(0,232,122,0.15), transparent 50%, rgba(0,232,122,0.05));
+  opacity: 0; transition: opacity 0.3s;
+}
+.card:hover::after { opacity: 1; }
+
+.card:active {
+  transform: scale(0.93);
+  border-color: var(--emerald2);
+  box-shadow: 0 0 20px rgba(0,232,122,0.15), 0 0 0 1px rgba(0,232,122,0.2) inset;
+}
+
+.card-icon {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+  filter: drop-shadow(0 0 6px rgba(0,232,122,0.4));
+  transition: filter 0.3s;
+}
+.card:active .card-icon {
+  filter: drop-shadow(0 0 10px rgba(0,232,122,0.8));
+}
+
+.card-name {
+  font-family: var(--font-display);
+  font-size: 8.5px; font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--text2);
+  text-align: center;
+  text-transform: uppercase;
+  position: relative; z-index: 1;
+  transition: color 0.3s;
+}
+.card:active .card-name { color: var(--emerald3); }
+
+/* Ripple */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(0,232,122,0.2);
+  transform: scale(0);
+  animation: rippleOut 0.5s linear;
+  pointer-events: none;
+}
+@keyframes rippleOut {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 500px;
+  padding: 0 16px 28px;
+  z-index: 20;
+}
+.nav-inner {
+  background: var(--glass2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-around;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 0 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,232,122,0.05) inset;
+}
+
+.nav-btn {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 14px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.nav-btn:active { transform: scale(0.85); }
+.nav-btn.active {
+  background: rgba(0,232,122,0.1);
+  box-shadow: 0 0 15px rgba(0,232,122,0.1);
+}
+.nav-btn svg { transition: filter 0.3s; }
+.nav-btn.active svg { filter: drop-shadow(0 0 5px rgba(0,232,122,0.7)); }
+.nav-btn-label {
+  font-family: var(--font-mono);
+  font-size: 8px; letter-spacing: 1px;
+  color: var(--text3);
+}
+.nav-btn.active .nav-btn-label { color: var(--emerald); }
+
+.nav-center-btn {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0,232,122,0.2), rgba(0,180,80,0.1));
+  border: 1px solid var(--emerald2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0,232,122,0.2), 0 0 0 4px rgba(0,232,122,0.05);
+  transition: all 0.3s ease;
+  margin-top: -12px;
+}
+.nav-center-btn:active {
+  transform: scale(0.9);
+  box-shadow: 0 0 30px rgba(0,232,122,0.4), 0 0 0 6px rgba(0,232,122,0.1);
+}
+
+/* Misc info row */
+.info-row {
+  padding: 16px 16px 0;
+  display: flex; gap: 8px;
+  flex-shrink: 0;
+}
+.info-card {
+  flex: 1;
+  background: var(--glass2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 12px;
+  backdrop-filter: blur(12px);
+}
+.info-card-label {
+  font-family: var(--font-mono);
+  font-size: 8px; letter-spacing: 2px;
+  color: var(--text3);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.info-card-val {
+  font-family: var(--font-display);
+  font-size: 15px; font-weight: 700;
+  color: var(--emerald);
+  text-shadow: 0 0 10px rgba(0,232,122,0.4);
+}
+.info-card-sub {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* Decorative lines */
+.deco-lines {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 1;
+  overflow: hidden;
+}
+.deco-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(0,232,122,0.1), transparent);
+  height: 1px;
+  animation: decoScroll 8s linear infinite;
+}
+.deco-line:nth-child(1) { width: 60%; top: 20%; animation-delay: 0s; }
+.deco-line:nth-child(2) { width: 40%; top: 55%; animation-delay: -3s; left: 30%; }
+.deco-line:nth-child(3) { width: 30%; top: 75%; animation-delay: -6s; left: 10%; }
+@keyframes decoScroll {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(200%); }
+}
+
+/* Corner decorations */
+.corner-tl, .corner-tr, .corner-bl, .corner-br {
+  position: absolute; width: 20px; height: 20px;
+  z-index: 1;
+}
+.corner-tl { top: 12px; left: 12px; border-top: 1px solid rgba(0,232,122,0.4); border-left: 1px solid rgba(0,232,122,0.4); }
+.corner-tr { top: 12px; right: 12px; border-top: 1px solid rgba(0,232,122,0.4); border-right: 1px solid rgba(0,232,122,0.4); }
+.corner-bl { bottom: 12px; left: 12px; border-bottom: 1px solid rgba(0,232,122,0.4); border-left: 1px solid rgba(0,232,122,0.4); }
+.corner-br { bottom: 12px; right: 12px; border-bottom: 1px solid rgba(0,232,122,0.4); border-right: 1px solid rgba(0,232,122,0.4); }
+
+/* Staggered entrance */
+.stagger { opacity: 0; transform: translateY(20px); }
+.stagger.in {
+  animation: staggerIn 0.5s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes staggerIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<!-- ═══════════════════ SPLASH ═══════════════════ -->
+<div class="screen active" id="splash">
+  <div class="grid-bg"></div>
+  <div class="splash-fog"></div>
+  <div class="scan-line"></div>
+  <div class="corner-tl"></div><div class="corner-tr"></div>
+  <div class="corner-bl"></div><div class="corner-br"></div>
+
+  <div class="splash-center">
+    <div class="shield-wrap">
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <svg class="shield-svg" width="80" height="90" viewBox="0 0 80 90" fill="none">
+        <path d="M40 4L6 16V44C6 62 20 78 40 86C60 78 74 62 74 44V16L40 4Z" fill="rgba(0,232,122,0.08)" stroke="rgba(0,232,122,0.7)" stroke-width="1.5"/>
+        <path d="M40 12L14 22V44C14 58 24 71 40 78C56 71 66 58 66 44V22L40 12Z" fill="rgba(0,232,122,0.05)" stroke="rgba(0,232,122,0.4)" stroke-width="1"/>
+        <path d="M28 43L36 51L54 33" stroke="rgba(0,232,122,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="40" cy="44" r="3" fill="rgba(0,232,122,0.5)"/>
+      </svg>
+    </div>
+
+    <div class="splash-title">
+      <div class="splash-wts">WTS</div>
+      <div class="splash-sub">White Trust Service</div>
+    </div>
+
+    <div class="splash-status" id="splash-status">Initializing secure access…</div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-pct" id="progress-pct">0%</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ONBOARDING ═══════════════════ -->
+<div class="screen" id="onboarding">
+  <div class="grid-bg"></div>
+  <div class="splash-fog"></div>
+  <div class="deco-lines">
+    <div class="deco-line"></div>
+    <div class="deco-line"></div>
+    <div class="deco-line"></div>
+  </div>
+
+  <div class="onboarding-card" id="ob-card">
+    <div class="ob-logo">
+      <svg class="ob-logo-icon" width="24" height="28" viewBox="0 0 80 90" fill="none">
+        <path d="M40 4L6 16V44C6 62 20 78 40 86C60 78 74 62 74 44V16L40 4Z" fill="rgba(0,232,122,0.1)" stroke="rgba(0,232,122,0.7)" stroke-width="2"/>
+        <path d="M28 43L36 51L54 33" stroke="rgba(0,232,122,0.9)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="ob-logo-text">WTS</div>
+    </div>
+
+    <div class="ob-title">Добро пожаловать в WTS</div>
+    <div class="ob-divider"></div>
+
+    <p class="ob-text">
+      Перед использованием системы вы должны ознакомиться с правилами платформы.
+    </p>
+    <p class="ob-text">
+      <strong>White Trust Service</strong> — это современная цифровая система, ориентированная на развитие, доверие, технологии и объединение людей в единую экосистему.
+    </p>
+    <p class="ob-text">Здесь ценятся:</p>
+    <ul class="ob-values">
+      <li>развитие</li>
+      <li>дисциплина</li>
+      <li>ответственность</li>
+      <li>движение вперёд</li>
+    </ul>
+    <p class="ob-text">
+      Продолжая использование платформы, вы подтверждаете, что ознакомились с условиями и принимаете правила системы.
+    </p>
+
+    <div class="ob-checkbox-wrap" id="ob-checkbox-wrap">
+      <div class="custom-checkbox" id="custom-cb">
+        <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+          <path d="M1 5L4.5 8.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="ob-checkbox-label">Я ознакомился с условиями и принимаю правила.</div>
+    </div>
+
+    <button class="btn-continue" id="btn-continue" disabled>ПРОДОЛЖИТЬ</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ HOME ═══════════════════ -->
+<div class="screen" id="home">
+  <div class="grid-bg"></div>
+  <div class="splash-fog"></div>
+  <div class="deco-lines">
+    <div class="deco-line"></div>
+    <div class="deco-line"></div>
+    <div class="deco-line"></div>
+  </div>
+
+  <div class="home-inner" id="home-inner">
+    <!-- Top bar -->
+    <div class="topbar stagger" id="s1">
+      <div class="topbar-left">
+        <div class="profile-btn" onclick="rippleEffect(this)">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="8" r="4" stroke="rgba(0,232,122,0.7)" stroke-width="1.5"/>
+            <path d="M3 19C3 15.686 6.686 13 11 13C15.314 13 19 15.686 19 19" stroke="rgba(0,232,122,0.7)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="icon-btn" onclick="rippleEffect(this)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 2C6.239 2 4 4.239 4 7V10L2 13H16L14 10V7C14 4.239 11.761 2 9 2Z" stroke="rgba(0,232,122,0.6)" stroke-width="1.5"/>
+            <path d="M7 13C7 14.105 7.895 15 9 15C10.105 15 11 14.105 11 13" stroke="rgba(0,232,122,0.6)" stroke-width="1.5"/>
+          </svg>
+          <div class="notif-dot"></div>
+        </div>
+        <div class="icon-btn" onclick="rippleEffect(this)">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="3" stroke="rgba(0,232,122,0.6)" stroke-width="1.5"/>
+            <path d="M9 1V3M9 15V17M1 9H3M15 9H17M3.222 3.222L4.636 4.636M13.364 13.364L14.778 14.778M3.222 14.778L4.636 13.364M13.364 4.636L14.778 3.222" stroke="rgba(0,232,122,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero stagger" id="s2">
+      <div class="hero-logo">WTS</div>
+      <div class="hero-sub">White Trust Service</div>
+      <div class="hero-line"></div>
+    </div>
+
+    <!-- Status pills -->
+    <div class="status-row stagger" id="s3">
+      <div class="status-pill"><div class="status-dot"></div>SECURE</div>
+      <div class="status-pill"><div class="status-dot yellow"></div>ACTIVE</div>
+      <div class="status-pill"><div class="status-dot blue"></div>ONLINE</div>
+    </div>
+
+    <!-- Info cards -->
+    <div class="info-row stagger" id="s4">
+      <div class="info-card">
+        <div class="info-card-label">Trust Level</div>
+        <div class="info-card-val">94%</div>
+        <div class="info-card-sub">Premium Access</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Network</div>
+        <div class="info-card-val">2.4K</div>
+        <div class="info-card-sub">Active Nodes</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Uptime</div>
+        <div class="info-card-val">99.9</div>
+        <div class="info-card-sub">SLA Tier-1</div>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid-section" style="margin-top:20px">
+      <div class="section-label stagger" id="s5">Core Modules</div>
+      <div class="cards-grid" id="cards-grid">
+        <!-- Cards injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-inner">
+      <div class="nav-btn active" onclick="setNav(this)">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M3 10L10 3L17 10V17H13V13H7V17H3V10Z" stroke="rgba(0,232,122,0.7)" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        <span class="nav-btn-label">HOME</span>
+      </div>
+      <div class="nav-btn" onclick="setNav(this)">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="7" stroke="rgba(0,232,122,0.4)" stroke-width="1.5"/>
+          <path d="M7 10H13M10 7V13" stroke="rgba(0,232,122,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="nav-btn-label">EXPLORE</span>
+      </div>
+      <div class="nav-center-btn" onclick="rippleEffect(this)">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M11 3L11 19M3 11L19 11" stroke="rgba(0,232,122,0.9)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="nav-btn" onclick="setNav(this)">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M3 6H17M3 10H17M3 14H17" stroke="rgba(0,232,122,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="nav-btn-label">FEED</span>
+      </div>
+      <div class="nav-btn" onclick="setNav(this)">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="7" r="3" stroke="rgba(0,232,122,0.4)" stroke-width="1.5"/>
+          <path d="M4 17C4 14.239 6.686 12 10 12C13.314 12 16 14.239 16 17" stroke="rgba(0,232,122,0.4)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="nav-btn-label">PROFILE</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════ PARTICLES ══════════════════════
+const canvas = document.getElementById('particle-canvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function Particle() {
+  this.x = Math.random() * W;
+  this.y = Math.random() * H;
+  this.vx = (Math.random() - 0.5) * 0.3;
+  this.vy = -Math.random() * 0.5 - 0.1;
+  this.r = Math.random() * 1.5 + 0.3;
+  this.alpha = Math.random() * 0.5 + 0.1;
+  this.life = 1;
+  this.decay = Math.random() * 0.003 + 0.001;
+}
+
+for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+function animParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach((p, i) => {
+    p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+    if (p.life <= 0 || p.y < -10) particles[i] = new Particle();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,232,122,${p.alpha * p.life})`;
+    ctx.fill();
+  });
+
+  // Digital lines
+  if (Math.random() < 0.02) {
+    const lx = Math.random() * W;
+    const ly = Math.random() * H;
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(lx + Math.random() * 80 - 40, ly + Math.random() * 4 - 2);
+    ctx.strokeStyle = `rgba(0,232,122,${Math.random() * 0.06 + 0.02})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  requestAnimationFrame(animParticles);
+}
+animParticles();
+
+// ══════════════════════ SPLASH PROGRESS ══════════════════════
+const statuses = [
+  'Initializing secure access…',
+  'Verifying cryptographic keys…',
+  'Loading trust protocols…',
+  'Establishing encrypted channel…',
+  'Scanning system integrity…',
+  'Access granted. Welcome.'
+];
+
+const fill = document.getElementById('progress-fill');
+const pct = document.getElementById('progress-pct');
+const statusEl = document.getElementById('splash-status');
+let progress = 0;
+let statusIdx = 0;
+
+const interval = setInterval(() => {
+  progress += Math.random() * 4 + 1.2;
+  if (progress > 100) progress = 100;
+  fill.style.width = progress + '%';
+  pct.textContent = Math.floor(progress) + '%';
+
+  const idx = Math.floor((progress / 100) * (statuses.length - 1));
+  if (idx !== statusIdx) {
+    statusIdx = idx;
+    statusEl.textContent = statuses[statusIdx];
+  }
+
+  if (progress >= 100) {
+    clearInterval(interval);
+    setTimeout(goFromSplash, 600);
+  }
+}, 60);
+
+function goFromSplash() {
+  const checked = localStorage.getItem('wts_onboarding');
+  if (checked) {
+    showScreen('home');
+    animateHomeEntrance();
+  } else {
+    showScreen('onboarding');
+  }
+}
+
+// ══════════════════════ SCREEN TRANSITIONS ══════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.classList.add('exit');
+    setTimeout(() => s.classList.remove('exit'), 800);
+  });
+  setTimeout(() => {
+    const s = document.getElementById(id);
+    s.classList.add('active');
+  }, 300);
+}
+
+// ══════════════════════ ONBOARDING ══════════════════════
+const cbWrap = document.getElementById('ob-checkbox-wrap');
+const customCb = document.getElementById('custom-cb');
+const btnContinue = document.getElementById('btn-continue');
+let cbChecked = false;
+
+cbWrap.addEventListener('click', () => {
+  cbChecked = !cbChecked;
+  cbWrap.classList.toggle('checked', cbChecked);
+  customCb.classList.toggle('checked', cbChecked);
+  btnContinue.disabled = !cbChecked;
+  btnContinue.classList.toggle('active', cbChecked);
+});
+
+btnContinue.addEventListener('click', function(e) {
+  if (!cbChecked) return;
+  createRipple(this, e);
+  localStorage.setItem('wts_onboarding', '1');
+  setTimeout(() => {
+    showScreen('home');
+    animateHomeEntrance();
+  }, 300);
+});
+
+// ══════════════════════ POPUP ══════════════════════
+function showPopup(msg) {
+  let existing = document.getElementById('wts-popup');
+  if (existing) existing.remove();
+  const popup = document.createElement('div');
+  popup.id = 'wts-popup';
+  popup.style.cssText = `
+    position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:rgba(4,20,8,0.92);border:1px solid rgba(0,232,122,0.3);
+    border-radius:14px;padding:14px 22px;z-index:100;
+    font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;
+    color:rgba(0,232,122,0.85);backdrop-filter:blur(20px);
+    box-shadow:0 0 24px rgba(0,232,122,0.15),0 8px 32px rgba(0,0,0,0.5);
+    opacity:0;transition:all 0.35s cubic-bezier(0.4,0,0.2,1);
+    white-space:nowrap;pointer-events:none;text-align:center;
+  `;
+  popup.textContent = msg;
+  document.body.appendChild(popup);
+  requestAnimationFrame(() => {
+    popup.style.opacity = '1';
+    popup.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    popup.style.opacity = '0';
+    popup.style.transform = 'translateX(-50%) translateY(10px)';
+    setTimeout(() => popup.remove(), 400);
+  }, 2400);
+}
+
+// ══════════════════════ CARDS ══════════════════════
+const modules = [
+  {
+    name: 'О WTS',
+    link: 'about.html',
+    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <path d="M16 2L4 7V16C4 23 8.5 28.5 16 31C23.5 28.5 28 23 28 16V7L16 2Z" stroke="rgba(0,232,122,0.8)" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M11 15.5L14.5 19L21 12" stroke="rgba(0,232,122,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`
+  },
+  {
+    name: 'Работа',
+    link: 'work.html',
+    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect x="4" y="10" width="24" height="18" rx="3" stroke="rgba(0,232,122,0.8)" stroke-width="1.5"/>
+      <path d="M11 10V7C11 5.895 11.895 5 13 5H19C20.105 5 21 5.895 21 7V10" stroke="rgba(0,232,122,0.6)" stroke-width="1.5"/>
+      <path d="M4 18H28M12 18V20M20 18V20" stroke="rgba(0,232,122,0.4)" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    name: 'Схемы',
+    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect x="4" y="4" width="10" height="10" rx="2" stroke="rgba(0,232,122,0.7)" stroke-width="1.5"/>
+      <rect x="18" y="4" width="10" height="10" rx="2" stroke="rgba(0,232,122,0.5)" stroke-width="1.5"/>
+      <rect x="11" y="18" width="10" height="10" rx="2" stroke="rgba(0,232,122,0.8)" stroke-width="1.5"/>
+      <path d="M9 14V18M23 14V16H16V18" stroke="rgba(0,232,122,0.4)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`
+  },
+  {
+    name: 'Скам лист',
+    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="12" stroke="rgba(0,232,122,0.7)" stroke-width="1.5"/>
+      <path d="M11 11L21 21M21 11L11 21" stroke="rgba(0,232,122,0.9)" stroke-width="2" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    name: 'Депозиты',
+    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect x="4" y="8" width="24" height="16" rx="3" stroke="rgba(0,232,122,0.8)" stroke-width="1.5"/>
+      <circle cx="16" cy="16" r="4" stroke="rgba(0,232,122,0.6)" stroke-width="1.5"/>
+      <path d="M4 12H8M24 12H28M4 20H8M24 20H28" stroke="rgba(0,232,122,0.3)" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`
+  },
+  {
+    name: 'Чат',
+    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <rect x="4" y="6" width="24" height="18" rx="3" stroke="rgba(0,232,122,0.8)" stroke-width="1.5"/>
+      <path d="M10 30L4 24H10V30Z" stroke="rgba(0,232,122,0.8)" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M10 13H22M10 17H18" stroke="rgba(0,232,122,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`
+  }
+];
+
+const grid = document.getElementById('cards-grid');
+modules.forEach((m, i) => {
+  const card = document.createElement('div');
+  card.className = 'card stagger';
+  card.id = 'c' + i;
+  card.innerHTML = `
+    <div class="card-icon">${m.icon}</div>
+    <div class="card-name">${m.name}</div>
+  `;
+  card.addEventListener('click', function(e) {
+    createRipple(this, e);
+    if (m.link) {
+      setTimeout(() => { window.location.href = m.link; }, 250);
+    } else {
+      showPopup('Раздел находится в разработке');
+    }
+  });
+  grid.appendChild(card);
+});
+
+// ══════════════════════ RIPPLE ══════════════════════
+function createRipple(el, e) {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const rect = el.getBoundingClientRect();
+  const x = (e.clientX || rect.left + rect.width/2) - rect.left;
+  const y = (e.clientY || rect.top + rect.height/2) - rect.top;
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${x - size/2}px;top:${y - size/2}px`;
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+function rippleEffect(el) {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const size = Math.max(w, h);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${(w-size)/2}px;top:${(h-size)/2}px`;
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+// ══════════════════════ HOME ENTRANCE ANIMATION ══════════════════════
+function animateHomeEntrance() {
+  const els = ['s1','s2','s3','s4','s5','c0','c1','c2','c3','c4','c5'];
+  els.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    setTimeout(() => {
+      el.style.animationDelay = '0ms';
+      el.classList.add('in');
+    }, i * 80 + 200);
+  });
+}
+
+// ══════════════════════ NAV ══════════════════════
+function setNav(el) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
